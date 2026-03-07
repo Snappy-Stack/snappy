@@ -1,0 +1,5 @@
+
+> @snappy/backend@1.0.0 lint E:\01_Project_And_Development\Projects\02_Website\Template_Snappy
+> cross-env NODE_OPTIONS=--no-deprecation next lint
+
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

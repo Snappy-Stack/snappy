@@ -1,0 +1,159 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Brand Palette - Industrial Scale */
+  --color-primary: var(--snappy-accent-primary);
+  --color-secondary: var(--snappy-accent-secondary);
+  --color-tertiary: var(--snappy-accent-tertiary);
+
+  /* Semantic Core Tokens */
+  --color-background: var(--snappy-bg);
+  --color-foreground: var(--snappy-fg);
+  --color-snappy-card: var(--snappy-card);
+  --color-snappy-card-fg: var(--snappy-card-fg);
+  --color-snappy-border: var(--snappy-border);
+  --color-snappy-border-strong: var(--snappy-border-strong);
+
+  /* Functional Tokens */
+  --color-destructive: var(--snappy-destructive);
+  --color-success: var(--snappy-success);
+  --color-warning: var(--snappy-warning);
+
+  /* Elevation Tokens */
+  --shadow-snappy-card: 20px 20px 60px -15px rgba(0, 0, 0, 0.1);
+  --shadow-snappy-card-hover: 30px 30px 80px -10px var(--snappy-accent-primary-alpha);
+}
+
+/* Cinematic Theme Transition Core */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  z-index: 999;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+@layer base {
+  :root {
+    /* Triple-Accent Light Palette */
+    --snappy-accent-primary: #a855f7; /* Purple */
+    --snappy-accent-primary-alpha: rgba(168, 85, 247, 0.1);
+    --snappy-accent-secondary: #06b6d4; /* Cyan */
+    --snappy-accent-tertiary: #f43f5e; /* Rose */
+
+    /* Industrial Light Tokens */
+    --snappy-bg: #fafafa;
+    --snappy-fg: #09090b;
+    --snappy-card: #ffffff;
+    --snappy-card-fg: #09090b;
+    --snappy-border: #f2f2f3;
+    --snappy-border-strong: #e4e4e7;
+
+    /* Semantic Functional Tokens */
+    --snappy-destructive: #ef4444; /* red-500 */
+    --snappy-success: #22c55e; /* green-500 */
+    --snappy-warning: #f59e0b; /* amber-500 */
+
+    background-color: var(--snappy-bg);
+    color: var(--snappy-fg);
+  }
+
+  .dark {
+    /* Triple-Accent Dark Palette (Vibrant overrides for dark mode) */
+    --snappy-accent-primary: #c084fc; /* Lighter Purple */
+    --snappy-accent-primary-alpha: rgba(192, 132, 252, 0.1);
+    --snappy-accent-secondary: #22d3ee; /* Lighter Cyan */
+    --snappy-accent-tertiary: #fb7185; /* Lighter Rose */
+
+    /* Industrial Dark Tokens */
+    --snappy-bg: #030408;
+    --snappy-fg: #fafafa;
+    --snappy-card: #09090b;
+    --snappy-card-fg: #fafafa;
+    --snappy-border: #14161a;
+    --snappy-border-strong: #1d2127;
+
+    /* Semantic Functional Tokens */
+    --snappy-destructive: #f87171; /* red-400 */
+    --snappy-success: #4ade80; /* green-400 */
+    --snappy-warning: #fbbf24; /* amber-400 */
+
+    background-color: var(--snappy-bg);
+    color: var(--snappy-fg);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--snappy-bg);
+    color: var(--snappy-fg);
+    @apply antialiased font-sans;
+  }
+
+  /**
+   * Fluid Type Scale
+   * Calibrated so 2K (2560px) = 16px base — the design baseline.
+   * At 1080p (1920px) → ~13.4px, proportionally smaller so the layout
+   * matches the same visual density as seen on 2K.
+   * All Tailwind rem values (text-sm, p-4, gap-6, etc.) scale with this.
+   */
+  html {
+    font-size: clamp(12px, 0.7vw, 16px);
+  }
+}
+
+/* === MOBILE SCROLL LOCK (SCOPED) ===
+   Only apply when .lock-scroll is present on html. */
+html.lock-scroll,
+html.lock-scroll body {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* === LOGO LOADER SHIMMER === */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* === PAYLOAD RICHTEXT DENSITY FIXES ===
+   Ensures RichText content ignores .prose-lg's em-based scaling
+   and stays locked to our rem-based fluid system. */
+.payload-richtext {
+  font-size: 1rem !important;
+}
+
+.payload-richtext :where(h2):not(:where([class~='not-prose'] *)) {
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.payload-richtext :where(p):not(:where([class~='not-prose'] *)) {
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+  color: hsl(var(--foreground) / 0.85);
+}
+
+.payload-richtext :where(blockquote):not(:where([class~='not-prose'] *)) {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+  padding-left: 1.5rem;
+  border-left: 4px solid hsl(var(--primary) / 0.3);
+  font-style: italic;
+}

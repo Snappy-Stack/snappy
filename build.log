@@ -1,0 +1,176 @@
+
+> @snappy/backend@1.0.0 build
+> npm run lint:tokens && cross-env NODE_OPTIONS="--no-deprecation --max-old-space-size=8000" next build
+
+
+> @snappy/backend@1.0.0 lint:tokens
+> node scripts/check-tokens.js
+
+≡ƒöì Checking codebase for hardcoded colors and invalid tokens...
+
+Γ£à All styling tokens are compliant!
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+- Experiments (use with caution):
+  ┬╖ serverActions
+
+  Creating an optimized production build ...
+Turbopack build encountered 2 warnings:
+./src/payload.config.ts:3:1
+Ecmascript file had an error
+  1 | import { postgresAdapter } from '@payloadcms/db-postgres'
+  2 | import { lexicalEditor } from '@payloadcms/richtext-lexical'
+> 3 | import path from 'path'
+    | ^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { buildConfig } from 'payload'
+  5 | import { fileURLToPath } from 'url'
+  6 | import sharp from 'sharp'
+
+A Node.js module is loaded ('path' at line 3) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+Import traces:
+  #1 [App Route]:
+    ./src/payload.config.ts
+    ./src/app/v1/[...slug]/route.ts
+
+  #2 [Server Component]:
+    ./src/payload.config.ts
+    ./src/app/actions/media.ts
+
+  #3 [Server Component]:
+    ./src/payload.config.ts
+    ./src/app/layout.tsx
+
+  #4 [Edge App Route]:
+    ./src/payload.config.ts
+    ./src/app/icon.tsx
+    ./src/app/icon--route-entry.js
+
+
+./src/payload.config.ts:5:1
+Ecmascript file had an error
+  3 | import path from 'path'
+  4 | import { buildConfig } from 'payload'
+> 5 | import { fileURLToPath } from 'url'
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import sharp from 'sharp'
+  7 | import { s3Storage } from '@payloadcms/storage-s3'
+  8 |
+
+A Node.js module is loaded ('url' at line 5) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+Import traces:
+  #1 [App Route]:
+    ./src/payload.config.ts
+    ./src/app/v1/[...slug]/route.ts
+
+  #2 [Server Component]:
+    ./src/payload.config.ts
+    ./src/app/actions/media.ts
+
+  #3 [Server Component]:
+    ./src/payload.config.ts
+    ./src/app/layout.tsx
+
+  #4 [Edge App Route]:
+    ./src/payload.config.ts
+    ./src/app/icon.tsx
+    ./src/app/icon--route-entry.js
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 3 errors:
+./node_modules/.pnpm/sharp@0.34.2/node_modules/sharp/lib/sharp.js
+non-ecmascript placeable asset
+asset is not placeable in ESM chunks, so it doesn't have a module id
+
+Import trace:
+  Edge App Route:
+    ./node_modules/.pnpm/sharp@0.34.2/node_modules/sharp/lib/sharp.js
+    ./node_modules/.pnpm/sharp@0.34.2/node_modules/sharp/lib/utility.js
+    ./node_modules/.pnpm/sharp@0.34.2/node_modules/sharp/lib/index.js
+    ./src/payload.config.ts
+    ./src/app/icon.tsx
+    ./src/app/icon--route-entry.js
+
+
+./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/getFile.js:1:1
+Export fileTypeFromFile doesn't exist in target module
+> 1 | import { fileTypeFromFile } from 'file-type';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import fsPromises from 'fs/promises';
+  3 | import { status as httpStatus } from 'http-status';
+  4 | import path from 'path';
+
+The export fileTypeFromFile was not found in module [project]/node_modules/.pnpm/file-type@19.3.0/node_modules/file-type/core.js [app-edge-route] (ecmascript).
+Did you mean to import fileTypeFromBlob?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/getFile.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/index.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/build.js
+    ./src/payload.config.ts
+    ./src/app/v1/[...slug]/route.ts
+
+  Server Component:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/getFile.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/index.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/build.js
+    ./src/payload.config.ts
+    ./src/app/layout.tsx
+
+  Edge App Route:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/getFile.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/endpoints/index.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/sanitize.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/config/build.js
+    ./src/payload.config.ts
+    ./src/app/icon.tsx
+    ./src/app/icon--route-entry.js
+
+
+./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/getFileByPath.js:1:1
+Export fileTypeFromFile doesn't exist in target module
+> 1 | import { fileTypeFromFile } from 'file-type';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import fs from 'fs/promises';
+  3 | import path from 'path';
+  4 | const mimeTypeEstimate = {
+
+The export fileTypeFromFile was not found in module [project]/node_modules/.pnpm/file-type@19.3.0/node_modules/file-type/core.js [app-edge-route] (ecmascript).
+Did you mean to import fileTypeFromBlob?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Server Component:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/getFileByPath.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/operations/local/update.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/index.js
+    ./src/app/(frontend)/love/page.tsx
+
+  App Route:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/getFileByPath.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/operations/local/update.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/index.js
+    ./src/app/sitemap.ts
+    ./src/app/sitemap--route-entry.js
+
+  Edge App Route:
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/uploads/getFileByPath.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/collections/operations/local/update.js
+    ./node_modules/.pnpm/payload@3.78.0_graphql@16.13.0_typescript@5.7.3/node_modules/payload/dist/index.js
+    ./src/app/icon.tsx
+    ./src/app/icon--route-entry.js
+
+
+    at ignore-listed frames
