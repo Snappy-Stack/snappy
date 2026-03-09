@@ -3,7 +3,7 @@
  *
  * All Payload data queries go through `unstable_cache`, which stores results
  * in Vercel's Data Cache (Edge). This means:
- *   - Request 1: Hits Payload/Supabase → stored at edge
+ *   - Request 1: Hits Payload/Cloudflare → stored at edge
  *   - Request 2+: Served from edge in <50ms (no DB round-trip)
  *   - After TTL: Revalidated in background (stale-while-revalidate)
  *

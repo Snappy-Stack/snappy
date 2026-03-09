@@ -5,7 +5,7 @@
 export function validateEnv() {
  // List of strictly required variables that must exist for the app to function
  const required = [
- 'DATABASE_URL',
+  'SNAPPY_LICENSE_TOKEN',
  'PAYLOAD_SECRET',
  'S3_BUCKET',
  'S3_ACCESS_KEY_ID',

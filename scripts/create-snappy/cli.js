@@ -11,18 +11,30 @@ import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import readline from 'readline'
 import os from 'os'
+import crypto from 'crypto'
 import { Command } from 'commander'
 import prompts from 'prompts'
 import pc from 'picocolors'
+import ora from 'ora'
+
+const SNAPPY_LOGO = `
+    ███████╗███╗   ██╗ █████╗ ██████╗ ██████╗ ██╗   ██╗
+    ██╔════╝████╗  ██║██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝
+    ███████╗██╔██╗ ██║███████║██████╔╝██████╔╝ ╚████╔╝ 
+    ╚════██║██║╚██╗██║██╔══██║██╔═══╝ ██╔═══╝   ╚██╔╝  
+    ███████║██║ ╚████║██║  ██║██║     ██║        ██║   
+    ╚══════╝╚═╝  ╚═══╝╚╚╝  ╚═╝╚═╝     ╚═╝        ╚═╝   
+`
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const CONFIG_DIR = path.join(os.homedir(), '.snappy')
-const CONFIG_FILE = path.join(CONFIG_DIR, 'auth.json')
+const LOREM_CONFIG_FILE = path.join(CONFIG_DIR, 'lorem.json')
+const AUTH_FILE = path.join(CONFIG_DIR, 'auth.json')
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 
-// This is a placeholder Client ID.
-// Note: This must be an 'OAuth App' with 'Device Flow' enabled in GitHub settings.
+// This is the Client ID for GitHub Device OAuth
 const CLIENT_ID = 'Ov23liWHoGiMponaUxrc'
 
 const rl = readline.createInterface({
@@ -32,12 +44,12 @@ const rl = readline.createInterface({
 
 const question = (query) => new Promise((resolve) => rl.question(query, resolve))
 
-// --- Auth Utilities ---
+// --- Auth & Config Utilities ---
 
 function getSavedToken() {
-  if (fs.existsSync(CONFIG_FILE)) {
+  if (fs.existsSync(AUTH_FILE)) {
     try {
-      const data = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'))
+      const data = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8'))
       return data.access_token
     } catch (e) {
       return null
@@ -50,7 +62,52 @@ function saveToken(token) {
   if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true })
   }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ access_token: token }, null, 2))
+  fs.writeFileSync(AUTH_FILE, JSON.stringify({ access_token: token }, null, 2))
+}
+
+function getSavedConfig() {
+  if (fs.existsSync(CONFIG_FILE)) {
+    try {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'))
+    } catch (e) {
+      return {}
+    }
+  }
+  return {}
+}
+
+function saveConfig(config) {
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true })
+  }
+  const current = getSavedConfig()
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ ...current, ...config }, null, 2))
+}
+
+function getMachineId() {
+  const machineIdFile = path.join(CONFIG_DIR, 'machine-id')
+  const hostname = os.hostname()
+  
+  if (fs.existsSync(machineIdFile)) {
+    return {
+      id: fs.readFileSync(machineIdFile, 'utf8').trim(),
+      hostname
+    }
+  }
+
+  // Generate a stable ID based on hardware info
+  const platform = os.platform()
+  const arch = os.arch()
+  const cpus = os.cpus().length
+  
+  const rawId = `${platform}-${arch}-${cpus}-${hostname}`
+  const hash = crypto.createHash('sha256').update(rawId).digest('hex').substring(0, 12)
+  
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true })
+  }
+  fs.writeFileSync(machineIdFile, hash)
+  return { id: hash, hostname }
 }
 
 async function githubLogin() {
@@ -125,18 +182,23 @@ async function githubLogin() {
 
 // --- Main CLI ---
 
+function getPackageManager() {
+  return 'pnpm'
+}
+
 async function main() {
-  console.log(pc.cyan('\n🚀 Welcome to the SNAPPY Stack Installer!'))
+  console.log(pc.cyan(SNAPPY_LOGO))
+  console.log(pc.cyan('🚀 Welcome to the SNAPPY Stack Installer! (v0.1.18)'))
   console.log('------------------------------------------')
 
   const program = new Command()
   program
     .name('create-snappy')
-    .description('Bootstrap a new SNAPPY project.')
-    .argument('[directory]', 'Project directory name')
-    .option('-t, --template <name>', 'Template to use (main, portofolio)')
-    .option('--local', 'Copy from local files instead of cloning (for dev)')
+    .description('The official installer for the SNAPPY stack. (Private Access Required)')
+    .argument('[project-name]', 'Name of the project directory')
+    .option('-t, --template <name>', 'Template to use (portfolio)', 'portfolio')
     .option('--login', 'Authenticate with GitHub to access private templates')
+    .option('--guided', 'Force guided setup for environment variables')
     .parse(process.argv)
 
   const options = program.opts()
@@ -154,6 +216,9 @@ async function main() {
     }
     return
   }
+
+  const savedConfig = getSavedConfig()
+  const hasSavedConfig = Object.keys(savedConfig).length > 0
 
   // INTERACTIVE PROMPTS
   const questions = []
@@ -179,7 +244,7 @@ async function main() {
     type: 'text',
     name: 'authorName',
     message: 'Author name?',
-    initial: 'Wicky',
+    initial: savedConfig.authorName || 'Wicky',
   })
 
   if (!options.template) {
@@ -188,10 +253,58 @@ async function main() {
       name: 'template',
       message: 'Which template would you like to use?',
       choices: [
-        { title: 'Portfolio', description: 'A sleek portfolio template', value: 'portofolio' },
+        { title: 'Portfolio', description: 'A sleek portfolio template', value: 'portfolio' },
       ],
       initial: 0,
     })
+  }
+
+  questions.push({
+    type: 'password',
+    name: 'snappyLicenseKey',
+    message: 'SNAPPY License Key (leave blank for trial)?',
+    initial: savedConfig.snappyLicenseKey || '',
+  })
+
+  // Guided Setup Questions
+  const needsGuided = options.guided || !hasSavedConfig
+
+  if (needsGuided) {
+    console.log(pc.yellow('\n🛠️  Guided Setup: Please enter your infrastructure details.'))
+    console.log(pc.gray('These will be saved to ~/.snappy/config.json for future use.\n'))
+
+    questions.push(
+      {
+        type: 'text',
+        name: 's3Bucket',
+        message: 'R2/S3 Bucket Name?',
+        initial: savedConfig.s3Bucket || 'snappy-production',
+      },
+      {
+        type: 'text',
+        name: 's3Region',
+        message: 'R2/S3 Region?',
+        initial: savedConfig.s3Region || 'auto',
+      },
+      {
+        type: 'text',
+        name: 's3Endpoint',
+        message: 'R2/S3 Endpoint URL?',
+        initial: savedConfig.s3Endpoint || '',
+      },
+      {
+        type: 'password',
+        name: 's3AccessKey',
+        message: 'R2/S3 Access Key ID?',
+        initial: savedConfig.s3AccessKey || '',
+      },
+      {
+        type: 'password',
+        name: 's3SecretKey',
+        message: 'R2/S3 Secret Access Key?',
+        initial: savedConfig.s3SecretKey || '',
+      },
+    )
   }
 
   const response = await prompts(questions, {
@@ -201,13 +314,31 @@ async function main() {
     },
   })
 
+  // Merge responses with saved config
+  const config = {
+    ...savedConfig,
+    authorName: response.authorName || savedConfig.authorName,
+    snappyLicenseKey: response.snappyLicenseKey || savedConfig.snappyLicenseKey,
+    s3Bucket: response.s3Bucket || savedConfig.s3Bucket,
+    s3Region: response.s3Region || savedConfig.s3Region,
+    s3Endpoint: response.s3Endpoint || savedConfig.s3Endpoint,
+    s3AccessKey: response.s3AccessKey || savedConfig.s3AccessKey,
+    s3SecretKey: response.s3SecretKey || savedConfig.s3SecretKey,
+  }
+
+  // Save if it was a guided session or forced
+  if (needsGuided) {
+    saveConfig(config)
+  }
+
   const projectName = providedName || response.projectName
   const projectDescription = response.projectDescription
-  const authorName = response.authorName
-  const selectedTemplate = options.template || response.template || 'portofolio'
+  const authorName = config.authorName
+  const selectedTemplate = options.template || response.template || 'portfolio'
 
   const targetDir = path.resolve(process.cwd(), projectName)
 
+  // Target directory check (but don't create yet to keep it empty for git clone)
   if (fs.existsSync(targetDir)) {
     const { overwrite } = await prompts({
       type: 'confirm',
@@ -223,59 +354,96 @@ async function main() {
     fs.rmSync(targetDir, { recursive: true, force: true })
   }
 
-  // Create target dir
-  fs.mkdirSync(targetDir, { recursive: true })
+  let finalLicenseToken = config.snappyLicenseKey;
+  let isTrial = false;
+  let { id: machineId, hostname } = getMachineId();
+  let machineIdToSave = machineId;
+  let skippedLicense = false;
+
+  // Auto-detect Lorem Ipsum sandbox for developers
+  let loremConfig = null;
+  if (fs.existsSync(LOREM_CONFIG_FILE)) {
+    try {
+      loremConfig = JSON.parse(fs.readFileSync(LOREM_CONFIG_FILE, 'utf8'));
+      if (!finalLicenseToken || finalLicenseToken.trim() === '') {
+        console.log(pc.yellow('\n🧪 Developer Sandbox Detected: Auto-configuring Lorem Ipsum environment.'));
+        isTrial = true;
+        finalLicenseToken = 'lorem_sandbox_mode';
+      } else {
+        console.log(pc.green('\n✅ Using provided license key. (Sandbox config ignored)'));
+      }
+    } catch (e) {
+      console.error(pc.red('⚠️ Failed to parse lorem.json: ' + e.message));
+    }
+  }
+
+  if (!isTrial && (!finalLicenseToken || finalLicenseToken.trim() === '')) {
+    const trialResponse = await prompts({
+      type: 'confirm',
+      name: 'startTrial',
+      message: '🎯 Start 2-hour free trial?',
+      initial: true
+    });
+
+    if (trialResponse.startTrial) {
+      console.log(pc.cyan('\n⏳ Setting up 2-hour free trial...'));
+      
+      try {
+        const res = await fetch('https://snappycore.wicky.id/api/trial', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ machineId, hostname })
+        });
+        
+        const data = await res.json();
+        if (res.ok && data.token) {
+          finalLicenseToken = data.token;
+          isTrial = true;
+          machineIdToSave = machineId;
+        } else {
+          console.error(pc.red(`\n❌ Trial generation failed: ${data.error || 'Unknown error'}`));
+          console.log(pc.gray('The installer cannot proceed without a valid trial license.'));
+          process.exit(1);
+        }
+      } catch (err) {
+        console.error(pc.red(`\n❌ Could not reach licensing server: ${err.message}`));
+        process.exit(1);
+      }
+    } else {
+      skippedLicense = true;
+    }
+  }
 
   try {
-    if (options.local) {
-      console.log(pc.gray(`\n📂 [Local Mode] Copying template files...`))
-      const templateDir = path.resolve(__dirname, '../../')
-      const skipList = ['node_modules', '.git', projectName, '.next', 'dist', 'scripts']
-      const entries = fs.readdirSync(templateDir, { withFileTypes: true })
+  // 1. Initialize from repository
+    const repoUrl = 'https://github.com/snappy-stack/snappy.git'
+    const cloneSpinner = ora(`Cloning template (${selectedTemplate})...`).start()
 
-      for (const entry of entries) {
-        if (skipList.some((skip) => entry.name.startsWith(skip))) continue
-        const srcPath = path.join(templateDir, entry.name)
-        const destPath = path.join(targetDir, entry.name)
-        fs.cpSync(srcPath, destPath, { recursive: true })
-      }
-      console.log(pc.green('✅ Template files copied.'))
-    } else {
-      let token = getSavedToken()
-
-      if (!token) {
-        console.log('\n🔒 No active session found.')
-        token = await githubLogin()
-      }
-
-      console.log(
-        pc.blue(`\n🌐 [Remote Mode] Initializing from repository (Branch: ${selectedTemplate})...`),
-      )
-
-      const repoUrl = process.env.SNAPPY_REPO_URL || 'https://github.com/WickyID/snappy-template'
-      // Use standard authenticated URL format
-      const authenticatedUrl = repoUrl.replace('https://', `https://x-access-token:${token}@`)
-
-      console.log(`Cloning into ${pc.bold(projectName)}...`)
-      try {
-        // Clone specific branch based on the selected template
-        execSync(`git clone --depth 1 -b ${selectedTemplate} ${authenticatedUrl} "${targetDir}"`, {
-          stdio: 'inherit',
-        })
-      } catch (cloneErr) {
-        console.error(
-          pc.red("Clone failed. Your token might have expired, or the branch doesn't exist yet."),
-        )
-        console.log('Try running `create-snappy --login` to refresh your session.')
-        throw cloneErr
-      }
-
-      // Cleanup .git to start fresh
-      if (fs.existsSync(path.join(targetDir, '.git'))) {
-        fs.rmSync(path.join(targetDir, '.git'), { recursive: true, force: true })
-      }
-      console.log(pc.green('✅ Repository cloned and cleaned.'))
+    try {
+      // Use inherit to see actual errors if it fails
+      cloneSpinner.stop()
+      execSync(`git clone --depth 1 -b ${selectedTemplate} ${repoUrl} "${targetDir}"`, {
+        stdio: 'inherit',
+      })
+      
+      // Template already has correct payload.config.ts — no patching needed.
+      console.log(pc.green('✔ Project cloned successfully.'))
+    } catch (err) {
+      console.error(pc.red("\n❌ Installation failed during project cloning."))
+      console.error(pc.gray(`Template: ${selectedTemplate}`))
+      console.error(pc.gray(`Repository: ${repoUrl}`))
+      throw err
     }
+
+    // Now safe to write metadata files
+    if (machineIdToSave) {
+      fs.writeFileSync(path.join(targetDir, '.snappy-machine-id'), machineIdToSave);
+    }
+
+    if (fs.existsSync(path.join(targetDir, '.git'))) {
+      fs.rmSync(path.join(targetDir, '.git'), { recursive: true, force: true })
+    }
+    console.log(pc.green('✅ Project initialized from secure source.'))
 
     // 2. Customize package.json and README.md
     console.log('\n📝 Customizing project files...')
@@ -286,10 +454,45 @@ async function main() {
       pkg.description = projectDescription || pkg.description
       pkg.author = authorName || pkg.author
       if (pkg.bin) delete pkg.bin
+      
+      // FIX LEXICAL MISMATCH - FORCE 0.35.0
+      if (pkg.dependencies) {
+        const targetLexical = "0.35.0";
+        console.log(pc.yellow(`🔄 Forcing Lexical dependencies to ${targetLexical}...`));
+        
+        // Fix main dependency
+        pkg.dependencies.lexical = targetLexical;
+
+        // Update @snappy-stack/core to latest
+        if (pkg.dependencies['@snappy-stack/core']) {
+          pkg.dependencies['@snappy-stack/core'] = '^0.1.7';
+        }
+        
+        // Fix all @lexical/* sub-dependencies
+        Object.keys(pkg.dependencies).forEach(dep => {
+          if (dep.startsWith('@lexical/')) {
+            pkg.dependencies[dep] = targetLexical;
+          }
+        });
+
+        // Add overrides for pnpm/npm to be absolutely sure
+        pkg.overrides = { ...pkg.overrides, lexical: targetLexical };
+        pkg.resolutions = { ...pkg.resolutions, lexical: targetLexical }; // For yarn
+        pkg.pnpm = { 
+          ...pkg.pnpm, 
+          overrides: { ...pkg.pnpm?.overrides, lexical: targetLexical } 
+        };
+      }
+
+      // CLEANUP LOCKFILES
+      ['pnpm-lock.yaml', 'package-lock.json', 'yarn.lock'].forEach(lock => {
+        const lockPath = path.join(targetDir, lock);
+        if (fs.existsSync(lockPath)) fs.unlinkSync(lockPath);
+      });
+
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
     }
 
-    // Customize README (if present)
     const readmePath = path.join(targetDir, 'README.md')
     if (fs.existsSync(readmePath)) {
       const readmeContent = `# ${projectName}\n\n${projectDescription}\n\nGenerated with \`create-snappy\`.`
@@ -299,46 +502,65 @@ async function main() {
 
     // 3. Configure .env
     console.log('\n🛠️ Configuring environment variables...')
-    const envContent = `NEXT_PUBLIC_SUPABASE_ANON_KEY="REDACTED_JWT"
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="REDACTED_SB"
-NEXT_PUBLIC_SUPABASE_URL="https://REDACTED.supabase.co"
-POSTGRES_DATABASE="postgres"
-POSTGRES_HOST="db.REDACTED.supabase.co"
-POSTGRES_PASSWORD="REDACTED"
-POSTGRES_PRISMA_URL="postgres://postgres.REDACTED:REDACTED@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
-POSTGRES_URL="postgres://postgres.REDACTED:REDACTED@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x"
-POSTGRES_URL_NON_POOLING="postgres://postgres.REDACTED:REDACTED@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require"
-POSTGRES_USER="postgres"
-SUPABASE_ANON_KEY="REDACTED_JWT"
-SUPABASE_JWT_SECRET="eUd+Xs31EEcvPZjAsl+6U6fd5sZbxsSvlNk77EreXwHrRLFW7hizGB+zeZhKEo7DzwgAshgXn2/fZ0UP1ZHVbw=="
-SUPABASE_PUBLISHABLE_KEY="REDACTED_SB"
-SUPABASE_SECRET_KEY="REDACTED_SB"
-SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6InNlcnZpY2Vfcm9sZSIsImiYXQiOjE3NzI4MzU4NTksImV4cCI6MjA4ODQxMTg1OX0.iJAQUh6kaRN2U9VkQM3QejM2n2ZHpCPnntJ5MU2n6DQ"
-SUPABASE_URL="https://REDACTED.supabase.co"
-DATABASE_URL="postgres://postgres.REDACTED:REDACTED@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x&uselibpqcompat=true"
-PAYLOAD_SECRET="${Math.random().toString(36).substring(2)}"
-S3_BUCKET="lorem_ass-et"
-S3_ACCESS_KEY_ID="7bf5d11de3ba4969c89653674201ab61"
-S3_SECRET_ACCESS_KEY="046090bb1767edb48de57d8aae69f7155935acb64c231e6d6e52c090294ca62f"
-S3_ENDPOINT="https://REDACTED.storage.supabase.co/storage/v1/s3"
-S3_REGION="ap-southeast-1"
+    
+    const finalS3Bucket = config.s3Bucket
+    const finalS3Endpoint = config.s3Endpoint
+    const finalS3AccessKey = config.s3AccessKey
+    const finalS3SecretKey = config.s3SecretKey
+    const finalS3Region = config.s3Region
+
+    const payloadSecret = crypto.randomBytes(32).toString('hex')
+    
+    const envContent = `# SNAPPY STACK - Zero-Config Environment
+SNAPPY_LICENSE_TOKEN="${finalLicenseToken || ''}"
+SNAPPY_API_URL="https://snappycore.wicky.id"
+
+# Payload CMS
+PAYLOAD_SECRET="${payloadSecret}"
 PUBLIC_FRONTEND_URL="http://localhost:3000"
-REQUIRE_LOGIN="no"
+
+# R2 Storage Configuration (Isolated via SNAPPY)
+S3_BUCKET="${finalS3Bucket}"
+NEXT_PUBLIC_S3_BUCKET="${finalS3Bucket}"
+S3_REGION="${finalS3Region}"
+S3_ENDPOINT="${finalS3Endpoint}"
+S3_ACCESS_KEY_ID="${finalS3AccessKey}"
+S3_SECRET_ACCESS_KEY="${finalS3SecretKey}"
 `
     fs.writeFileSync(path.join(targetDir, '.env'), envContent)
-    console.log(pc.green('✅ .env generated.'))
+    console.log(pc.green('✅ .env generated.\n'))
 
     if (process.env.SKIP_INSTALL !== 'true') {
-      console.log(pc.magenta('\n📦 Installing dependencies (pnpm)...'))
+      const pm = getPackageManager()
+      const installCmd = pm === 'npm' ? 'npm install' : `${pm} install`
+      const installSpinner = ora(`Installing dependencies using ${pm}...`).start()
       try {
-        execSync('pnpm install', { cwd: targetDir, stdio: 'inherit' })
+        execSync(installCmd, { cwd: targetDir, stdio: 'ignore' })
+        installSpinner.succeed('Dependencies installed successfully.')
       } catch (e) {
-        console.warn(pc.yellow('Warning: pnpm install failed.'))
+        installSpinner.fail('Failed to install dependencies.')
+        console.warn(pc.yellow(`Warning: ${installCmd} failed.`))
       }
     }
 
-    console.log(pc.green('\n✅ SNAPPY Stack is ready!'))
-    console.log(`\nNext steps:\n  cd ${pc.bold(projectName)}\n  pnpm run dev\n`)
+    const pmRun = getPackageManager() === 'npm' ? 'npm run dev' : `${getPackageManager()} run dev`
+
+    if (skippedLicense) {
+      console.log(pc.red('\n  ──────────────────────────────────'));
+      console.log(`    🔑 ${pc.bold(pc.white('Add your license key to .env'))}`);
+      console.log(pc.gray('       SNAPPY_LICENSE_TOKEN=sk_snappy_...'));
+      console.log('');
+      console.log(`    📡 ${pc.cyan('Get your key: wicky.id')}`);
+      console.log(`    📖 ${pc.cyan('Docs: snappycore.wicky.id')}`);
+      console.log(pc.red('  ──────────────────────────────────'));
+      console.log(pc.bold(pc.red('\n    THERE IS NO MERCY IN PRODUCTION 👹 \n')));
+    } else if (isTrial) {
+      console.log(pc.green('\n✅ 2-hour free trial active! Your trial license has been added to .env.'));
+    }
+
+    console.log(pc.green('\n✅ SNAPPY Stack is perfectly prepared and ready to launch!'))
+    console.log(`\nNext steps:\n  cd ${pc.bold(projectName)}\n  ${pmRun}\n`)
+
   } catch (err) {
     console.error(pc.red(`Installation failed: ${err.message || err}`))
   } finally {
@@ -351,4 +573,3 @@ main().catch((err) => {
   if (rl) rl.close()
   process.exit(1)
 })
-

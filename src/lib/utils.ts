@@ -15,10 +15,13 @@ export function getMediaUrl(media: any) {
 
   // If we have a filename but URL is relative or missing
   if (media.filename) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const bucket = process.env.NEXT_PUBLIC_S3_BUCKET || process.env.S3_BUCKET
-    if (!supabaseUrl || !bucket) return null
-    return `${supabaseUrl}/storage/v1/object/public/${bucket.replace(/\s+/g, '%20')}/media/${media.filename}`
+    const endpoint = process.env.S3_ENDPOINT || ''
+    const bucket = process.env.S3_BUCKET || ''
+    
+    if (endpoint.includes('r2.cloudflarestorage.com')) {
+      return `https://pub-86641b997c0c451da7a398047315.r2.dev/${media.filename}`
+    }
+    return `/${media.filename}`
   }
 
   return media.url || null

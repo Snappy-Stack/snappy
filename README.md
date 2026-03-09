@@ -4,7 +4,7 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![Payload CMS](https://img.shields.io/badge/Payload-v3-black?style=flat-square&logo=payload)](https://payloadcms.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20|%20S3-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-D1%20|%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)](https://cloudflare.com/)
 [![Ark UI](https://img.shields.io/badge/Ark%20UI-Components-E45354?style=flat-square)](https://ark-ui.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
@@ -17,7 +17,7 @@
 The SNAPPY stack eliminates boilerplate while holding onto premium, custom-coded flexibility. It bridges the gap between headless CMS scalability and beautiful, accessible frontend components.
 
 - **Payload CMS v3 APIs**: Run your CMS seamlessly alongside your Next.js App Router. No complex multi-repo deployments.
-- **Supabase Backbone**: Out-of-the-box configuration for Supabase PostgreSQL and S3 Object Storage.
+- **Snappy D1 Proxy**: Out-of-the-box isolation with Cloudflare D1. Zero local database setup required.
 - **Ark UI & Tailwind v4**: Headless, accessible components styled with the latest utility-first CSS engine.
 - **Zero-Config CLI**: Instantly bootstrap a new, fully connected project using the secure `create-snappy` CLI.
 
@@ -72,7 +72,7 @@ my-new-project/
 │   ├── collections/   # Payload CMS Collections (Users, Media, etc.)
 │   ├── components/    # Reusable React & Ark UI Components
 │   └── globals/       # Payload CMS Globals (Nav, SEO, Branding)
-├── .env               # Supabase Connection Strings
+├── .env               # Zero-Config Environment Variables
 └── package.json       # Project Scripts & Dependencies
 ```
 
@@ -80,8 +80,8 @@ my-new-project/
 
 The SNAPPY stack is perfectly optimized for modern edge infrastructure.
 
-1. **Frontend & Compute**: Deploy directly to [Vercel](https://vercel.com).
-2. **Database & Storage**: Connect to [Supabase](https://supabase.com) using your provisioned `DATABASE_URL` and `S3_ENDPOINT`.
+1. **Frontend & Compute**: Deploy directly to [Vercel](https://vercel.com) or any Next.js host.
+2. **Infrastructure**: Provide your `SNAPPY_LICENSE_TOKEN` and the stack handles the rest (D1 Database, R2 Assets, Security).
 
 ---
 

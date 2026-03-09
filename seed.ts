@@ -6,7 +6,7 @@ async function seed() {
   console.log('Starting SNAPPY Database Seed Process...')
 
   const payload = await getPayload({
-    config,
+    config: await config,
   })
 
   // Seed Landing Pages
@@ -90,7 +90,7 @@ async function seed() {
       data: {
         title: 'The Future of Web Development with SNAPPY',
         excerpt:
-          'Explore how combining Supabase, Next.js, and Ark UI creates the ultimate developer experience.',
+          'Explore how combining Cloudflare, Next.js, and Ark UI creates the ultimate developer experience.',
         content: {
           root: {
             type: 'root',

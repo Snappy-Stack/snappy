@@ -1,10 +1,11 @@
-import { postgresAdapter } from '@payloadcms/db-postgres'
+import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { s3Storage } from '@payloadcms/storage-s3'
+import { withSnappy, createSnappyD1Proxy } from '@snappy-stack/core'
 
 import { LoginTokens } from './collections/LoginTokens'
 import { Users } from './collections/Users'
@@ -28,7 +29,7 @@ import { AboutStory } from './globals/AboutStory'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default buildConfig({
+export default withSnappy(() => buildConfig({
   routes: {
     api: '/v1',
   },
@@ -64,20 +65,26 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: postgresAdapter({
-    pool: {
-      connectionString: process.env.DATABASE_URL || '',
-      ssl: {
-        rejectUnauthorized: false,
-      },
+  db: sqliteAdapter({
+    client: {
+      url: 'http://remote-proxy',
     },
-  }),
+    drizzleConfig: {
+      connection: {
+        type: 'sqlite',
+        callback: createSnappyD1Proxy(
+          process.env.SNAPPY_LICENSE_TOKEN || '',
+          process.env.SNAPPY_API_URL || 'https://snappycore.wicky.id'
+        )
+      }
+    }
+  } as any),
   sharp,
   plugins: [
     s3Storage({
       collections: {
         media: {
-          prefix: 'media',
+          prefix: `${process.env.SNAPPY_R2_PREFIX || 'global'}/media`,
         },
       },
       bucket: process.env.NEXT_PUBLIC_S3_BUCKET || process.env.S3_BUCKET || '',
@@ -92,4 +99,4 @@ export default buildConfig({
       },
     }),
   ],
-})
+}))
